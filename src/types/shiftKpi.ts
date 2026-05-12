@@ -7,6 +7,7 @@ export type StoreStaff = {
   hourlyRate: number
   teamBonusBase: number
   linkedUserId: string | null
+  linkedEmail: string | null
 }
 
 export type StoreDailySummary = {
@@ -18,7 +19,7 @@ export type StoreDailySummary = {
   storeOrders: number
   storeProducts: number
   storeDayKpiTarget: number
-  mockApiRevenueTotal: number
+  tongDoanhThuHeThong: number
 }
 
 export type DailyEntryRow = {
@@ -68,7 +69,7 @@ export type MonthlyDashboard = {
   yearMonth: string
   monthlyTarget: number
   revenueFromStaffEntries: number
-  revenueFromApiMock: number
+  tongDoanhThuHeThongThang: number
   kpiAchievedPct: number
   discrepancyOver5Pct: boolean
   isMonthLocked: boolean

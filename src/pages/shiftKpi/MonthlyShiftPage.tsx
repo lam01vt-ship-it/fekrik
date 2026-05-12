@@ -3,10 +3,7 @@ import * as krikApi from '../../api/krikApi'
 import { useShiftKpiStoreId } from '../../hooks/useShiftKpiStoreId'
 import type { StoreRow } from '../../types/api'
 import type { MonthlyDashboard } from '../../types/shiftKpi'
-
-function money(n: number) {
-  return new Intl.NumberFormat('vi-VN').format(Math.round(n))
-}
+import { formatMoneyEn } from '../../utils/moneyFormat'
 
 export function MonthlyShiftPage() {
   const { stores, storeId, setStoreId } = useShiftKpiStoreId()
@@ -33,8 +30,8 @@ export function MonthlyShiftPage() {
   return (
     <>
       <p className="krik-page-lead">
-        So sánh KPI tháng đã cấu hình với <strong>DT NV nhập</strong> và <strong>DT mock API</strong>; cờ chênh
-        lệnh khi lệch &gt; 5%.
+        So sánh mục tiêu KPI tháng với tổng doanh thu nhập từ bảng công nhân viên và tổng cột đối chiếu kênh
+        trong bảng tổng ngày. Hiển thị cảnh báo khi chênh lệch trên 5%.
       </p>
       <div className="krik-card" style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
@@ -59,7 +56,6 @@ export function MonthlyShiftPage() {
               className="krik-input"
               value={yearMonth}
               onChange={(e) => setYearMonth(e.target.value)}
-              placeholder="2026-05"
             />
           </label>
           <button type="button" className="krik-btn krik-btn--ghost" onClick={() => void load()}>
@@ -77,10 +73,10 @@ export function MonthlyShiftPage() {
               gap: 16,
             }}
           >
-            <Metric label="KPI tháng (mục tiêu)" value={`${money(dash.monthlyTarget)} ₫`} />
-            <Metric label="DT từ bảng công (NV)" value={`${money(dash.revenueFromStaffEntries)} ₫`} />
-            <Metric label="DT mock API" value={`${money(dash.revenueFromApiMock)} ₫`} />
-            <Metric label="% hoàn thành KPI" value={`${dash.kpiAchievedPct.toFixed(2)}%`} />
+            <Metric label="KPI tháng (mục tiêu)" value={`${formatMoneyEn(dash.monthlyTarget, 0)} ₫`} />
+            <Metric label="Doanh thu nhập (nhân viên)" value={`${formatMoneyEn(dash.revenueFromStaffEntries, 0)} ₫`} />
+            <Metric label="Tổng đối chiếu kênh (tháng)" value={`${formatMoneyEn(dash.tongDoanhThuHeThongThang, 0)} ₫`} />
+            <Metric label="Tỷ lệ hoàn thành KPI" value={`${formatMoneyEn(dash.kpiAchievedPct, 2)}%`} />
             <Metric
               label="Chênh lệch &gt; 5%"
               value={dash.discrepancyOver5Pct ? 'Có cờ cảnh báo' : 'Trong ngưỡng'}
@@ -109,7 +105,9 @@ function Metric({ label, value, warn }: { label: string; value: string; warn?: b
       <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
         {label}
       </div>
-      <div style={{ fontWeight: 800, fontSize: 16 }}>{value}</div>
+      <div style={{ fontWeight: 800, fontSize: 16, textAlign: 'right' }} className="krik-money">
+        {value}
+      </div>
     </div>
   )
 }

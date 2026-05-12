@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import type { AppOutletContextValue } from './appOutletContext'
 
 function pageMeta(pathname: string): { module: string; title: string } {
   const p = pathname.replace(/\/$/, '') || '/app'
@@ -10,9 +11,9 @@ function pageMeta(pathname: string): { module: string; title: string } {
   if (p.includes('/staff-shift-kpi/daily')) return { module: 'Vận hành', title: 'Bảng công theo ngày' }
   if (p.includes('/staff-shift-kpi/monthly')) return { module: 'Vận hành', title: 'Tổng quan tháng' }
   if (p.includes('/staff-shift-kpi/kpi-config')) return { module: 'Vận hành', title: 'Cấu hình KPI tháng' }
-  if (p.includes('/staff-shift-kpi/staff')) return { module: 'Vận hành', title: 'Danh sách NV' }
+  if (p.includes('/staff-shift-kpi/staff')) return { module: 'Vận hành', title: 'Danh sách nhân viên' }
   if (p.includes('/staff-shift-kpi/payroll')) return { module: 'Vận hành', title: 'Bảng lương' }
-  return { module: 'Krik', title: 'Trang' }
+  return { module: 'Ứng dụng', title: 'Trang' }
 }
 
 function initials(name: string): string {
@@ -22,6 +23,17 @@ function initials(name: string): string {
     .join('')
     .toUpperCase()
     .slice(0, 2)
+}
+
+const roleVi: Record<string, string> = {
+  AdminHR: 'Quản trị & nhân sự',
+  AreaManager: 'Quản lý khu vực',
+  StoreManager: 'Quản lý cửa hàng',
+  SalesStaff: 'Nhân viên bán hàng',
+}
+
+function rolesVi(roles: string[]) {
+  return roles.map((r) => roleVi[r] ?? r).join(' · ')
 }
 
 const IcHome = () => (
@@ -88,6 +100,8 @@ export function AppLayout() {
   })
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [headerActions, setHeaderActions] = useState<ReactNode>(null)
+  const outletContext = useMemo<AppOutletContextValue>(() => ({ setHeaderActions }), [])
 
   const isAdmin = user?.roles.includes('AdminHR') ?? false
   const canStaffMaster =
@@ -98,7 +112,6 @@ export function AppLayout() {
     try {
       localStorage.setItem('krik_sidebar_collapsed', collapsed ? '1' : '0')
     } catch {
-      /* ignore */
     }
   }, [collapsed])
 
@@ -118,7 +131,7 @@ export function AppLayout() {
       <aside className={`krik-sidenav${collapsed ? ' is-collapsed' : ''}`}>
         <div className="krik-sidebar-brand">
           <div className="krik-sidebar-logo">K</div>
-          {!collapsed ? <span className="krik-brand-name">Krik demo</span> : null}
+          {!collapsed ? <span className="krik-brand-name">Krik</span> : null}
           <button
             type="button"
             className="krik-collapse-btn"
@@ -130,7 +143,7 @@ export function AppLayout() {
           </button>
         </div>
         <nav className="krik-menu">
-          {!collapsed ? <div className="krik-nav-section-label">Menu</div> : null}
+          {!collapsed ? <div className="krik-nav-section-label">Danh mục</div> : null}
           <NavLink
             to="/app"
             end
@@ -152,7 +165,7 @@ export function AppLayout() {
           </NavLink>
           {!collapsed ? (
             <div className="krik-nav-section-label" style={{ marginTop: 8 }}>
-              Công &amp; KPI NV
+              Công và KPI nhân viên
             </div>
           ) : null}
           <NavLink
@@ -192,7 +205,7 @@ export function AppLayout() {
             >
               <span className="krik-nav-dot" />
               <IcUsers />
-              <span className="krik-nav-label">Danh sách NV</span>
+              <span className="krik-nav-label">Danh sách nhân viên</span>
             </NavLink>
           ) : null}
           <NavLink
@@ -207,12 +220,12 @@ export function AppLayout() {
           {isAdmin ? (
             <NavLink
               to="/app/admin"
-              title="Admin / Users"
+              title="Quản trị người dùng"
               className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
             >
               <span className="krik-nav-dot" />
               <IcShield />
-              <span className="krik-nav-label">Admin / Users</span>
+              <span className="krik-nav-label">Quản trị người dùng</span>
             </NavLink>
           ) : null}
         </nav>
@@ -220,7 +233,7 @@ export function AppLayout() {
           {!collapsed ? (
             <div className="krik-user-compact">
               <span className="name">{user?.fullName}</span>
-              <span className="roles">{user?.roles.join(', ')}</span>
+              <span className="roles">{user ? rolesVi(user.roles) : ''}</span>
             </div>
           ) : null}
         </div>
@@ -236,6 +249,7 @@ export function AppLayout() {
             <h1 className="page-title">{meta.title}</h1>
           </div>
           <div className="krik-header-actions">
+            {headerActions ? <div className="krik-header-page-actions">{headerActions}</div> : null}
             <div className="krik-user-menu-wrap" ref={menuRef}>
               <button
                 type="button"
@@ -271,7 +285,7 @@ export function AppLayout() {
         </header>
 
         <div className="krik-main-body">
-          <Outlet />
+          <Outlet context={outletContext} />
         </div>
       </main>
     </div>

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as krikApi from '../../api/krikApi'
+import { MoneyCellInput } from '../../components/MoneyCellInput'
 import { useShiftKpiStoreId } from '../../hooks/useShiftKpiStoreId'
 import type { StoreRow } from '../../types/api'
 import type { StoreMonthlyKpiConfig } from '../../types/shiftKpi'
+import { formatMoneyEn, parseMoneyEn } from '../../utils/moneyFormat'
 
 export function KpiConfigPage() {
   const { stores, storeId, setStoreId } = useShiftKpiStoreId()
@@ -21,12 +23,12 @@ export function KpiConfigPage() {
     try {
       const c = await krikApi.fetchKpiMonth(storeId, yearMonth)
       setCfg(c)
-      setTarget(String(c.monthlyTargetAmount))
+      setTarget(formatMoneyEn(c.monthlyTargetAmount, 0))
       setWeek(c.weekRatiosJson)
       setDay(c.dayRatiosJson)
       setShift(c.shiftRatiosJson)
     } catch {
-      setErr('Không tải được cấu hình (chỉ Admin sửa).')
+      setErr('Không tải được cấu hình.')
     }
   }, [storeId, yearMonth])
 
@@ -39,8 +41,8 @@ export function KpiConfigPage() {
     if (!storeId) return
     setMsg(null)
     setErr(null)
-    const amt = parseFloat(target.replace(/,/g, ''))
-    if (Number.isNaN(amt) || amt < 0) {
+    const amt = parseMoneyEn(target)
+    if (amt < 0) {
       setErr('KPI tháng phải là số ≥ 0.')
       return
     }
@@ -54,15 +56,15 @@ export function KpiConfigPage() {
       setCfg(c)
       setMsg('Đã lưu.')
     } catch {
-      setErr('Lưu thất bại (cần role AdminHR hoặc tháng đã khoá).')
+      setErr('Không lưu được. Kiểm tra quyền hoặc tháng đã khoá.')
     }
   }
 
   return (
     <>
       <p className="krik-page-lead">
-        Trang <strong>Cấu hình KPI tháng</strong> — chỉ Admin chỉnh sửa. JSON tỷ trọng tuần / ngày / ca (MVP: lưu
-        thẳng chuỗi, derive daily/weekly nâng cao sẽ bổ sung).
+        Thiết lập KPI tháng và chuỗi JSON tỷ trọng (tuần, ngày trong tuần, ca). Chỉ tài khoản quản trị & nhân sự
+        được lưu.
       </p>
       <div className="krik-card" style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
@@ -100,18 +102,28 @@ export function KpiConfigPage() {
           </p>
           <label className="krik-field">
             KPI tháng (VND)
-            <input className="krik-input" value={target} onChange={(e) => setTarget(e.target.value)} />
+            {cfg.isMonthLocked ? (
+              <input className="krik-input krik-money-input" readOnly disabled value={target} />
+            ) : (
+              <MoneyCellInput
+                value={parseMoneyEn(target) || 0}
+                syncKey={`${storeId}-${yearMonth}-${cfg.updatedAt}`}
+                maxFractionDigits={0}
+                onCommit={(n) => setTarget(formatMoneyEn(n, 0))}
+                className="krik-input krik-money-input"
+              />
+            )}
           </label>
           <label className="krik-field">
-            Week ratios JSON (5 tuần, ví dụ [20,20,20,20,20])
+            Tỷ trọng theo tuần (JSON, 5 giá trị)
             <textarea className="krik-input" style={{ minHeight: 72 }} value={week} onChange={(e) => setWeek(e.target.value)} />
           </label>
           <label className="krik-field">
-            Day ratios JSON
+            Tỷ trọng theo ngày trong tuần (JSON)
             <textarea className="krik-input" style={{ minHeight: 72 }} value={day} onChange={(e) => setDay(e.target.value)} />
           </label>
           <label className="krik-field">
-            Shift ratios JSON
+            Tỷ trọng theo ca (JSON)
             <textarea className="krik-input" style={{ minHeight: 100 }} value={shift} onChange={(e) => setShift(e.target.value)} />
           </label>
           <button type="submit" className="krik-btn krik-btn--primary" disabled={cfg.isMonthLocked}>

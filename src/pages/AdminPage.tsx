@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react'
 import * as krikApi from '../api/krikApi'
 import type { UserListItem } from '../types/api'
 
+const roleVi: Record<string, string> = {
+  AdminHR: 'Quản trị & nhân sự',
+  AreaManager: 'Quản lý khu vực',
+  StoreManager: 'Quản lý cửa hàng',
+  SalesStaff: 'Nhân viên bán hàng',
+}
+
+function rolesVi(roles: string[]) {
+  return roles.map((r) => roleVi[r] ?? r).join(', ')
+}
+
 export function AdminPage() {
   const [ping, setPing] = useState<string | null>(null)
   const [users, setUsers] = useState<UserListItem[] | null>(null)
@@ -18,7 +29,7 @@ export function AdminPage() {
           setUsers(u)
         }
       } catch {
-        if (!cancelled) setError('Không có quyền hoặc API lỗi.')
+        if (!cancelled) setError('Không có quyền hoặc máy chủ lỗi.')
       }
     })()
     return () => {
@@ -28,10 +39,10 @@ export function AdminPage() {
 
   return (
     <>
-      <p className="krik-page-lead">Chỉ role AdminHR: ping API và danh sách user.</p>
+      <p className="krik-page-lead">Chỉ tài khoản quản trị & nhân sự: kiểm tra API và danh sách người dùng.</p>
       {error ? <p className="krik-alert">{error}</p> : null}
       <div className="krik-card">
-        <h2 className="krik-page-title">API kiểm tra</h2>
+        <h2 className="krik-page-title">Kiểm tra API</h2>
         <p style={{ margin: 0, fontSize: 14 }}>
           <strong>/api/admin/ping</strong>: {ping ?? '…'}
         </p>
@@ -42,33 +53,33 @@ export function AdminPage() {
         </h2>
         <div className="krik-table-wrap">
           <table className="krik-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Họ tên</th>
-              <th>StoreId</th>
-              <th>Roles</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users === null ? (
+            <thead>
               <tr>
-                <td colSpan={4} style={{ color: 'var(--muted)' }}>
-                  Đang tải…
-                </td>
+                <th>Email</th>
+                <th>Họ tên</th>
+                <th>Mã cửa hàng</th>
+                <th>Vai trò</th>
               </tr>
-            ) : (
-              users.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.email}</td>
-                  <td>{u.fullName}</td>
-                  <td>{u.storeId ?? '—'}</td>
-                  <td>{u.roles.join(', ')}</td>
+            </thead>
+            <tbody>
+              {users === null ? (
+                <tr>
+                  <td colSpan={4} style={{ color: 'var(--muted)' }}>
+                    Đang tải…
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                users.map((u) => (
+                  <tr key={u.id}>
+                    <td>{u.email}</td>
+                    <td>{u.fullName}</td>
+                    <td>{u.storeId ?? '—'}</td>
+                    <td>{rolesVi(u.roles)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </>

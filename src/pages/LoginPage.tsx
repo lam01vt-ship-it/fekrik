@@ -34,16 +34,13 @@ export function LoginPage() {
   return (
     <div className="krik-login-page">
       <div className="krik-login-hero">
-        <h1>Krik demo</h1>
-        <p>
-          Giao diện theo theme Fisa: xanh dương, sidebar và bảng dữ liệu thống nhất. Chạy API (port
-          5207) và FE (port 5173) song song.
-        </p>
+        <h1>Krik</h1>
+        <p>Đăng nhập để sử dụng ứng dụng quản lý cửa hàng. API chạy cổng 5207, giao diện cổng 5173.</p>
       </div>
       <div className="krik-login-panel">
         <div className="krik-login-card">
           <h2>Đăng nhập</h2>
-          <p className="krik-login-sub">Nhập tài khoản seed hoặc user của bạn.</p>
+          <p className="krik-login-sub">Danh sách tài khoản thử và dữ liệu mẫu: xem file HUONG_DAN_TEST.md trong mã nguồn API (thư mục bekrik).</p>
           <form onSubmit={onSubmit}>
             <label className="krik-field">
               Email
@@ -69,23 +66,6 @@ export function LoginPage() {
               {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
             </button>
           </form>
-          <div className="krik-login-hint">
-            <strong>Tài khoản seed</strong> (mật khẩu: <code>Admin123!</code>):
-            <ul>
-              <li>
-                <code>admin@krik.local</code> — AdminHR
-              </li>
-              <li>
-                <code>area@krik.local</code> — AreaManager
-              </li>
-              <li>
-                <code>store@krik.local</code> — StoreManager
-              </li>
-              <li>
-                <code>sales@krik.local</code> — SalesStaff
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
