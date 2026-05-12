@@ -1,0 +1,115 @@
+import { useCallback, useEffect, useState } from 'react'
+import * as krikApi from '../../api/krikApi'
+import { useShiftKpiStoreId } from '../../hooks/useShiftKpiStoreId'
+import type { StoreRow } from '../../types/api'
+import type { MonthlyDashboard } from '../../types/shiftKpi'
+
+function money(n: number) {
+  return new Intl.NumberFormat('vi-VN').format(Math.round(n))
+}
+
+export function MonthlyShiftPage() {
+  const { stores, storeId, setStoreId } = useShiftKpiStoreId()
+  const [yearMonth, setYearMonth] = useState('2026-05')
+  const [dash, setDash] = useState<MonthlyDashboard | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    if (!storeId) return
+    setErr(null)
+    try {
+      const d = await krikApi.fetchMonthlyDashboard(storeId, yearMonth)
+      setDash(d)
+    } catch {
+      setErr('Không tải được tổng quan tháng.')
+      setDash(null)
+    }
+  }, [storeId, yearMonth])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  return (
+    <>
+      <p className="krik-page-lead">
+        So sánh KPI tháng đã cấu hình với <strong>DT NV nhập</strong> và <strong>DT mock API</strong>; cờ chênh
+        lệnh khi lệch &gt; 5%.
+      </p>
+      <div className="krik-card" style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
+          <label className="krik-field" style={{ marginBottom: 0, minWidth: 200 }}>
+            Cửa hàng
+            <select
+              className="krik-input"
+              value={storeId ?? ''}
+              onChange={(e) => setStoreId(e.target.value || null)}
+            >
+              <option value="">—</option>
+              {stores.map((s: StoreRow) => (
+                <option key={s.id} value={s.id}>
+                  {s.code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="krik-field" style={{ marginBottom: 0 }}>
+            Tháng (yyyy-MM)
+            <input
+              className="krik-input"
+              value={yearMonth}
+              onChange={(e) => setYearMonth(e.target.value)}
+              placeholder="2026-05"
+            />
+          </label>
+          <button type="button" className="krik-btn krik-btn--ghost" onClick={() => void load()}>
+            Tải lại
+          </button>
+        </div>
+      </div>
+      {err ? <p className="krik-alert">{err}</p> : null}
+      {dash ? (
+        <div className="krik-card">
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: 16,
+            }}
+          >
+            <Metric label="KPI tháng (mục tiêu)" value={`${money(dash.monthlyTarget)} ₫`} />
+            <Metric label="DT từ bảng công (NV)" value={`${money(dash.revenueFromStaffEntries)} ₫`} />
+            <Metric label="DT mock API" value={`${money(dash.revenueFromApiMock)} ₫`} />
+            <Metric label="% hoàn thành KPI" value={`${dash.kpiAchievedPct.toFixed(2)}%`} />
+            <Metric
+              label="Chênh lệch &gt; 5%"
+              value={dash.discrepancyOver5Pct ? 'Có cờ cảnh báo' : 'Trong ngưỡng'}
+              warn={dash.discrepancyOver5Pct}
+            />
+            <Metric label="Khoá tháng" value={dash.isMonthLocked ? 'Đã khoá' : 'Mở'} />
+          </div>
+        </div>
+      ) : (
+        <p className="muted">Chọn cửa hàng.</p>
+      )}
+    </>
+  )
+}
+
+function Metric({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  return (
+    <div
+      style={{
+        padding: 12,
+        borderRadius: 10,
+        border: `1px solid ${warn ? '#fecaca' : 'var(--border)'}`,
+        background: warn ? '#fff7ed' : '#fafbff',
+      }}
+    >
+      <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+        {label}
+      </div>
+      <div style={{ fontWeight: 800, fontSize: 16 }}>{value}</div>
+    </div>
+  )
+}

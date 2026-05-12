@@ -422,6 +422,12 @@ body {
   max-width: 720px;
 }
 
+.krik-muted,
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .krik-page-title {
   margin: 0 0 8px;
   font-size: 1.25rem;
@@ -556,6 +562,27 @@ body {
   background: #f1f5f9;
   padding: 2px 6px;
   border-radius: 6px;
+}
+
+.krik-scroll-wide {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.krik-sheet-table .krik-cell-input {
+  min-width: 72px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.krik-pill-kpi {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e9f2ff;
+  color: #0b5cab;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 /* Definition list */
