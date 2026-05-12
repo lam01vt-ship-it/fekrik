@@ -487,6 +487,168 @@ body {
   background: #f7f9fc;
 }
 
+.krik-btn--danger {
+  background: #b91c1c;
+  color: #fff;
+  border-color: #991b1b;
+}
+
+.krik-btn--danger:hover:not(:disabled) {
+  background: #991b1b;
+}
+
+.krik-header-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-right: 6px;
+}
+
+.krik-header-btn {
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transition:
+    background 0.15s,
+    transform 0.08s;
+}
+
+.krik-header-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.krik-header-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.krik-header-btn--solid {
+  background: #fff;
+  color: var(--brand);
+  border-color: #fff;
+}
+
+.krik-header-btn--solid:hover:not(:disabled) {
+  background: #f0f7ff;
+}
+
+.krik-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.krik-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.krik-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.28);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.krik-modal-panel--sm {
+  max-width: 400px;
+}
+
+.krik-modal-panel--md {
+  max-width: 480px;
+}
+
+.krik-modal-panel--lg {
+  max-width: 640px;
+}
+
+.krik-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 0;
+}
+
+.krik-modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.krik-modal-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.krik-modal-close:hover {
+  background: #e5e7eb;
+}
+
+.krik-modal-body {
+  padding: 14px 18px 18px;
+}
+
+.krik-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 18px 16px;
+}
+
+.krik-notice-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.krik-notice-line--ok {
+  color: #166534;
+}
+
+.krik-notice-line--err {
+  color: #9b1c1c;
+}
+
+.krik-table tbody tr.krik-table-row--click {
+  cursor: pointer;
+}
+
+.krik-table tbody tr.krik-table-row--click:hover {
+  background: var(--row-hover);
+}
+
 /* Form */
 .krik-field {
   display: flex;
@@ -569,10 +731,150 @@ body {
   overflow-x: auto;
 }
 
-.krik-sheet-table .krik-cell-input {
-  min-width: 72px;
+/* Bảng công ngày — ô nhập giãn theo nội dung (field-sizing), tối thiểu bằng ô cột */
+.krik-sheet-table .krik-cell-input,
+.krik-sheet-table .krik-money-input {
+  box-sizing: border-box;
+  field-sizing: content;
+  min-width: 100%;
+  width: auto;
+  max-width: none;
   padding: 6px 8px;
   font-size: 13px;
+}
+
+.krik-sheet-table .krik-cell-input {
+  min-width: max(100%, 4.5rem);
+}
+
+.krik-sheet-table .krik-money-input {
+  min-width: max(100%, 5rem);
+}
+
+.krik-sheet-table {
+  table-layout: auto;
+}
+
+.krik-sheet-table tbody td:not(.krik-money) {
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: top;
+}
+
+.krik-sheet-table tbody td.krik-money {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.krik-sheet-table thead th {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+  vertical-align: bottom;
+  padding-right: 14px;
+}
+
+.krik-sheet-table thead th.krik-th-resizable .krik-th-resizable-inner {
+  position: relative;
+  display: block;
+  min-height: 2.6em;
+}
+
+.krik-col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 14px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  z-index: 6;
+}
+
+.krik-col-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  right: 5px;
+  width: 3px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--brand) 45%, #94a3b8);
+  opacity: 0.85;
+}
+
+.krik-col-resize-handle:hover::after {
+  opacity: 1;
+  background: var(--brand);
+}
+
+/* Tổng hợp theo ngày — cùng chiều cao, số căn đáy thẻ */
+.krik-daily-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 1180px) {
+  .krik-daily-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .krik-daily-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.krik-daily-summary-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: #fafbff;
+  border: 1px solid var(--border);
+  min-height: 92px;
+  box-sizing: border-box;
+}
+
+.krik-daily-summary-tile-label {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+  min-height: 2.75em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.krik-daily-summary-tile-value {
+  margin-top: auto;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.krik-money,
+.krik-table th.krik-money,
+.krik-table td.krik-money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Tiêu đề bảng công: cho phép xuống dòng dù th có .krik-money */
+.krik-sheet-table thead th.krik-money {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.krik-money-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .krik-pill-kpi {
@@ -607,9 +909,9 @@ body {
 
 /* ----- Login (full page) ----- */
 .krik-login-page {
-  min-height: 100%;
+  min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  grid-template-columns: 1fr 1fr;
 }
 
 @media (max-width: 900px) {
@@ -623,24 +925,45 @@ body {
   color: #fff;
   padding: 48px 40px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
+}
+
+.krik-login-hero-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 16px;
+  max-width: 420px;
+}
+
+.krik-login-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  backdrop-filter: blur(2px);
 }
 
 .krik-login-hero h1 {
   margin: 0;
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-size: clamp(2rem, 4vw, 2.75rem);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
-.krik-login-hero p {
+.krik-login-tagline {
   margin: 0;
   opacity: 0.92;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
-  max-width: 400px;
 }
 
 .krik-login-panel {
@@ -652,16 +975,19 @@ body {
 }
 
 .krik-login-card {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 24px;
+  padding: 28px 28px 24px;
 }
 
 .krik-login-card h2 {
   margin: 0 0 6px;
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: var(--text);
 }
@@ -672,28 +998,55 @@ body {
   color: var(--muted);
 }
 
-.krik-login-hint {
-  margin-top: 18px;
-  font-size: 13px;
+.krik-login-submit {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.krik-password-wrap {
+  position: relative;
+  display: block;
+}
+
+.krik-password-input {
+  padding-right: 40px;
+}
+
+.krik-password-eye {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
   color: var(--muted);
-  line-height: 1.55;
-}
-
-.krik-login-hint ul {
-  margin: 8px 0 0;
-  padding-left: 1.1rem;
-}
-
-.krik-login-hint code {
-  font-size: 12px;
-  background: #f1f5f9;
-  padding: 2px 6px;
+  cursor: pointer;
   border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.krik-password-eye:hover {
+  color: var(--text);
+  background: #f1f5f9;
+}
+
+.krik-password-eye:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
 }
 
 @media (max-width: 900px) {
   .krik-login-hero {
     padding: 28px 24px;
-    min-height: 180px;
+    min-height: 200px;
+  }
+  .krik-login-hero-inner {
+    align-items: center;
+    text-align: center;
   }
 }

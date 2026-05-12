@@ -2,7 +2,6 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
 import { AppLayout } from './layout/AppLayout'
 import { AdminPage } from './pages/AdminPage'
-import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { StoresPage } from './pages/StoresPage'
 import { DailyShiftPage } from './pages/shiftKpi/DailyShiftPage'
@@ -26,14 +25,14 @@ export default function App() {
               </RequireAuth>
             }
           >
-            <Route index element={<DashboardPage />} />
+            <Route index element={<MonthlyShiftPage />} />
             <Route path="stores" element={<StoresPage />} />
             <Route path="staff-shift-kpi/daily" element={<DailyShiftPage />} />
-            <Route path="staff-shift-kpi/monthly" element={<MonthlyShiftPage />} />
+            <Route path="staff-shift-kpi/monthly" element={<Navigate to="/app" replace />} />
             <Route
               path="staff-shift-kpi/kpi-config"
               element={
-                <RequireRole roles={['AdminHR']}>
+                <RequireRole roles={['AdminHR', 'AreaManager', 'StoreManager']}>
                   <KpiConfigPage />
                 </RequireRole>
               }

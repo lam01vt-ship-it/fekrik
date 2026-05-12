@@ -1,4 +1,4 @@
-import type { LoginResponse, StoreRow, UserListItem, UserSummary } from '../types/api'
+import type { AreaRow, LoginResponse, StoreRow, UserListItem, UserSummary } from '../types/api'
 import type {
   DailySheet,
   MonthlyDashboard,
@@ -20,6 +20,30 @@ export async function fetchMe(): Promise<UserSummary> {
 
 export async function fetchStores(): Promise<StoreRow[]> {
   const { data } = await api.get<StoreRow[]>('/api/stores')
+  return data
+}
+
+export async function fetchAreas(): Promise<AreaRow[]> {
+  const { data } = await api.get<AreaRow[]>('/api/areas')
+  return data
+}
+
+export async function postStore(body: { code: string; name: string; areaId: string }): Promise<StoreRow> {
+  const { data } = await api.post<StoreRow>('/api/stores', body)
+  return data
+}
+
+export async function putStore(id: string, body: { name: string; areaId: string }): Promise<StoreRow> {
+  const { data } = await api.put<StoreRow>(`/api/stores/${id}`, body)
+  return data
+}
+
+export async function postStoresBatchDelete(storeIds: string[]): Promise<void> {
+  await api.post('/api/stores/batch-delete', { storeIds })
+}
+
+export async function downloadStoresExport(): Promise<Blob> {
+  const { data } = await api.get<Blob>('/api/stores/export', { responseType: 'blob' })
   return data
 }
 
@@ -47,10 +71,31 @@ export async function postShiftKpiStaff(
     contractType: string
     hourlyRate: number
     teamBonusBase: number
-    linkedUserId: string | null
+    linkedUserId: null
+    loginEmail: string
+    loginPassword: string
   },
 ): Promise<StoreStaff> {
   const { data } = await api.post<StoreStaff>(`/api/stores/${storeId}/shift-kpi/staff`, body)
+  return data
+}
+
+export async function putShiftKpiStaff(
+  storeId: string,
+  staffId: string,
+  body: {
+    staffCode: string
+    fullName: string
+    positionCode: string
+    contractType: string
+    hourlyRate: number
+    teamBonusBase: number
+    linkedUserId: string | null
+    loginEmail: string | null
+    loginPassword: string | null
+  },
+): Promise<StoreStaff> {
+  const { data } = await api.put<StoreStaff>(`/api/stores/${storeId}/shift-kpi/staff/${staffId}`, body)
   return data
 }
 
@@ -61,6 +106,14 @@ export async function deleteShiftKpiStaff(storeId: string, staffId: string): Pro
 export async function fetchShiftKpiDaily(storeId: string, workDate: string): Promise<DailySheet> {
   const { data } = await api.get<DailySheet>(`/api/stores/${storeId}/shift-kpi/daily`, {
     params: { workDate },
+  })
+  return data
+}
+
+export async function downloadDailyShiftExport(storeId: string, workDate: string): Promise<Blob> {
+  const { data } = await api.get<Blob>(`/api/stores/${storeId}/shift-kpi/daily-export`, {
+    params: { workDate },
+    responseType: 'blob',
   })
   return data
 }
@@ -88,6 +141,40 @@ export async function putKpiMonth(
   const { data } = await api.put<StoreMonthlyKpiConfig>(
     `/api/stores/${storeId}/shift-kpi/kpi-months/${encodeURIComponent(yearMonth)}`,
     body,
+  )
+  return data
+}
+
+export async function patchKpiMonthLock(
+  storeId: string,
+  yearMonth: string,
+  locked: boolean,
+): Promise<StoreMonthlyKpiConfig> {
+  const { data } = await api.patch<StoreMonthlyKpiConfig>(
+    `/api/stores/${storeId}/shift-kpi/kpi-months/${encodeURIComponent(yearMonth)}/month-lock`,
+    { locked },
+  )
+  return data
+}
+
+export async function patchDailyDayLock(storeId: string, workDate: string, locked: boolean): Promise<void> {
+  await api.patch(`/api/stores/${storeId}/shift-kpi/daily-day-lock`, { locked }, { params: { workDate } })
+}
+
+export async function postDailyEqualize(storeId: string, workDate: string): Promise<void> {
+  await api.post(`/api/stores/${storeId}/shift-kpi/daily-equalize`, {}, { params: { workDate } })
+}
+
+export async function patchStaffPosition(
+  storeId: string,
+  staffId: string,
+  positionCode: string,
+  workDate: string,
+): Promise<StoreStaff> {
+  const { data } = await api.patch<StoreStaff>(
+    `/api/stores/${storeId}/shift-kpi/staff/${staffId}/position`,
+    { positionCode },
+    { params: { workDate } },
   )
   return data
 }

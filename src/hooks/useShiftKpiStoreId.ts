@@ -3,7 +3,6 @@ import * as krikApi from '../api/krikApi'
 import { useAuth } from '../auth/AuthContext'
 import type { StoreRow } from '../types/api'
 
-/** Chọn cửa hàng cho module Công & KPI: ưu tiên store của user, không thì CH đầu danh sách. */
 export function useShiftKpiStoreId() {
   const { user } = useAuth()
   const [stores, setStores] = useState<StoreRow[]>([])

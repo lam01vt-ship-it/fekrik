@@ -22,6 +22,12 @@ export type StoreRow = {
   areaName: string
 }
 
+export type AreaRow = {
+  id: string
+  code: string
+  name: string
+}
+
 export type UserListItem = {
   id: string
   email: string
