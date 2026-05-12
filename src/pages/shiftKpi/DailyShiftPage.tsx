@@ -20,6 +20,10 @@ function localTodayYmd(): string {
 
 const MANAGER_ROLES = new Set(['AdminHR', 'AreaManager', 'StoreManager'])
 
+const POSITION_CODES: readonly string[] = ['QLCH', 'CHP', 'NVBH_FT', 'NVBH_PT', 'NVTN', 'NVK', 'NVBV']
+
+const SALES_POSITION_CODES = new Set(['NVBH_FT', 'NVBH_PT'])
+
 function sumStaffRollup(rows: DailyEntryRow[]) {
   let revenueMorning = 0
   let revenueAfternoon = 0
@@ -99,7 +103,11 @@ export function DailyShiftPage() {
 
   const canEditPastDays = Boolean(user?.roles?.some((r) => MANAGER_ROLES.has(r)))
   const isPastWorkDate = workDate < localTodayYmd()
-  const tableReadOnly = isPastWorkDate && !canEditPastDays
+  const sheetLocks = Boolean(sheet?.monthLocked || sheet?.dayLocked)
+  const tableReadOnly = (isPastWorkDate && !canEditPastDays) || sheetLocks
+
+  const isAdmin = Boolean(user?.roles?.includes('AdminHR'))
+  const canStaffMaster = Boolean(user?.roles?.some((r) => MANAGER_ROLES.has(r)))
 
   const staffRollup = useMemo(() => (sheet ? sumStaffRollup(sheet.rows) : null), [sheet])
   const [colWidths, setColWidths] = useState<number[]>(() => readDailySheetColWidths())
@@ -195,22 +203,89 @@ export function DailyShiftPage() {
     }
   }, [storeId, workDate])
 
+  const onEqualize = useCallback(async () => {
+    if (!storeId || tableReadOnly) return
+    if (!window.confirm('Chia đều doanh thu ba ca và chỉ số phụ giữa các NV bán hàng có giờ công?')) return
+    setErr(null)
+    try {
+      await krikApi.postDailyEqualize(storeId, workDate)
+      await load()
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e) && e.response?.status === 409) {
+        const msg = (e.response?.data as { message?: string } | undefined)?.message
+        setErr(msg ?? 'Không thể equalize (tháng/ngày đã khoá).')
+        return
+      }
+      setErr('Chia đều thất bại.')
+    }
+  }, [storeId, workDate, tableReadOnly, load])
+
+  const onToggleDayLock = useCallback(async () => {
+    if (!storeId || !sheet) return
+    setErr(null)
+    try {
+      await krikApi.patchDailyDayLock(storeId, workDate, !sheet.dayLocked)
+      await load()
+    } catch {
+      setErr('Không đổi được trạng thái khoá ngày.')
+    }
+  }, [storeId, workDate, sheet, load])
+
   useEffect(() => {
     setHeaderActions(
-      <button
-        type="button"
-        className="krik-header-btn krik-header-btn--solid"
-        disabled={!storeId || busy}
-        onClick={() => void onExportExcel()}
-      >
-        Xuất Excel
-      </button>,
+      <>
+        {canStaffMaster ? (
+          <button
+            type="button"
+            className="krik-header-btn krik-header-btn--ghost"
+            disabled={!storeId || busy || tableReadOnly}
+            onClick={() => void onEqualize()}
+          >
+            Chia đều DT (NV BH)
+          </button>
+        ) : null}
+        {isAdmin ? (
+          <button
+            type="button"
+            className="krik-header-btn krik-header-btn--ghost"
+            disabled={!storeId || busy || !sheet}
+            onClick={() => void onToggleDayLock()}
+          >
+            {sheet?.dayLocked ? 'Mở khoá ngày' : 'Khoá ngày'}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="krik-header-btn krik-header-btn--solid"
+          disabled={!storeId || busy}
+          onClick={() => void onExportExcel()}
+        >
+          Xuất Excel
+        </button>
+      </>,
     )
     return () => setHeaderActions(null)
-  }, [setHeaderActions, storeId, workDate, busy, onExportExcel])
+  }, [
+    setHeaderActions,
+    storeId,
+    workDate,
+    busy,
+    sheet,
+    tableReadOnly,
+    canStaffMaster,
+    isAdmin,
+    onExportExcel,
+    onEqualize,
+    onToggleDayLock,
+  ])
 
   async function saveCell(row: DailyEntryRow, patch: Partial<Record<NumKey, number>>) {
     if (!storeId) return
+    if (!row.canPatch || tableReadOnly) {
+      if (sheetLocks) setErr('Tháng hoặc ngày đã khoá — không sửa được.')
+      else if (!row.canPatch) setErr('Bạn không có quyền sửa dòng này (đồng cấp quản lý).')
+      return
+    }
     if (isPastWorkDate && !canEditPastDays) {
       setErr('Ngày làm việc đã qua: chỉ quản lý cửa hàng / khu vực / Admin HR được sửa.')
       return
@@ -228,7 +303,8 @@ export function DailyShiftPage() {
         return
       }
       if (axiosIsConflict(e)) {
-        setErr('Phiên bản dữ liệu đã đổi — đang tải lại.')
+        const msg = axios.isAxiosError(e) ? (e.response?.data as { message?: string } | undefined)?.message : undefined
+        setErr(msg ?? 'Phiên bản dữ liệu đã đổi — đang tải lại.')
         await load()
         return
       }
@@ -240,7 +316,8 @@ export function DailyShiftPage() {
     <>
       <p className="krik-page-lead">
         Nhập giờ làm và doanh thu theo ca cho từng nhân viên. Dữ liệu lưu khi rời ô nhập; sau khi lưu hệ thống tải lại bảng để cập nhật mục tiêu và % KPI cho mọi nhân viên. Mặc định chọn{' '}
-        <strong>ngày hiện tại</strong>. <strong>Ngày đã qua</strong> chỉ quản lý cửa hàng / khu vực / Admin HR được sửa.
+        <strong>ngày hiện tại</strong>. <strong>Ngày đã qua</strong> chỉ quản lý cửa hàng / khu vực / Admin HR được sửa.{' '}
+        <strong>Khoá tháng / khoá ngày</strong> do Admin HR bật — khi đó không sửa được bảng (trừ khi mở khoá).
       </p>
       <div className="krik-card" style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
@@ -271,7 +348,11 @@ export function DailyShiftPage() {
         </div>
         {tableReadOnly ? (
           <p className="muted" style={{ fontSize: 12, marginTop: 8, marginBottom: 0 }}>
-            Ngày làm việc đã qua: chỉ tài khoản quản lý được chỉnh sửa bảng công.
+            {sheetLocks
+              ? sheet?.monthLocked
+                ? 'Tháng làm việc đã khoá — không chỉnh sửa bảng công.'
+                : 'Ngày làm việc đã khoá — không chỉnh sửa bảng công.'
+              : 'Ngày làm việc đã qua: chỉ tài khoản quản lý được chỉnh sửa bảng công.'}
           </p>
         ) : null}
       </div>
@@ -279,13 +360,9 @@ export function DailyShiftPage() {
       {sheet ? (
         <>
           <div className="krik-card" style={{ marginBottom: 14 }}>
-            <h2 className="krik-page-title" style={{ fontSize: '1rem', marginBottom: 8 }}>
+            <h2 className="krik-page-title" style={{ fontSize: '1rem', marginBottom: 12 }}>
               Tổng hợp theo ngày (cửa hàng)
             </h2>
-            <p className="muted" style={{ fontSize: 12, margin: '0 0 12px', lineHeight: 1.45 }}>
-              <strong>Doanh thu theo ca</strong> và <strong>KH / Đơn / SP</strong> dưới đây là <strong>tổng</strong> các giá trị đang có trên bảng nhân viên.{' '}
-              <strong>KPI ngày cửa hàng</strong> lấy từ bản ghi cửa hàng trong hệ thống — không đổi khi chỉnh doanh thu trên bảng (chỉnh qua cấu hình KPI tháng / đồng bộ nguồn khác nếu có).
-            </p>
             <div className="krik-daily-summary-grid">
               {(() => {
                 const r = staffRollup ?? sumStaffRollup([])
@@ -393,7 +470,17 @@ export function DailyShiftPage() {
                 </thead>
                 <tbody>
                   {sheet.rows.map((row: DailyEntryRow, i: number) => (
-                    <DailyRowInputs key={row.entryId} index={i + 1} row={row} readOnly={tableReadOnly} onSave={saveCell} />
+                    <DailyRowInputs
+                      key={row.entryId}
+                      index={i + 1}
+                      row={row}
+                      readOnly={tableReadOnly}
+                      canEditPosition={canStaffMaster && !tableReadOnly}
+                      storeId={storeId!}
+                      workDate={workDate}
+                      onPositionSaved={load}
+                      onSave={saveCell}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -438,14 +525,34 @@ function DailyRowInputs({
   index,
   row,
   readOnly,
+  canEditPosition,
+  storeId,
+  workDate,
+  onPositionSaved,
   onSave,
 }: {
   index: number
   row: DailyEntryRow
   readOnly: boolean
+  canEditPosition: boolean
+  storeId: string
+  workDate: string
+  onPositionSaved: () => Promise<void>
   onSave: (row: DailyEntryRow, patch: Partial<Record<NumKey, number>>) => void
 }) {
   const syncKey = `${row.entryId}-${row.version}`
+  const cellReadOnly = readOnly || !row.canPatch
+
+  async function onPositionChange(ev: React.ChangeEvent<HTMLSelectElement>) {
+    const next = ev.target.value
+    if (!canEditPosition || next === row.positionCode) return
+    try {
+      await krikApi.patchStaffPosition(storeId, row.staffId, next, workDate)
+      await onPositionSaved()
+    } catch {
+      ev.target.value = row.positionCode
+    }
+  }
 
   return (
     <tr key={`${row.entryId}-${row.version}`}>
@@ -454,14 +561,26 @@ function DailyRowInputs({
         <code>{row.staffCode}</code>
       </td>
       <td>{row.fullName}</td>
-      <td>{row.positionCode}</td>
+      <td>
+        {canEditPosition ? (
+          <select className="krik-input" value={row.positionCode} onChange={(e) => void onPositionChange(e)}>
+            {POSITION_CODES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        ) : (
+          row.positionCode
+        )}
+      </td>
       <td>{row.contractType}</td>
       <td className="krik-money">
         <MoneyCellInput
           value={row.hoursMorning}
           syncKey={syncKey}
           maxFractionDigits={2}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { hoursMorning: n })}
         />
       </td>
@@ -470,7 +589,7 @@ function DailyRowInputs({
           value={row.hoursAfternoon}
           syncKey={syncKey}
           maxFractionDigits={2}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { hoursAfternoon: n })}
         />
       </td>
@@ -479,7 +598,7 @@ function DailyRowInputs({
           value={row.hoursEvening}
           syncKey={syncKey}
           maxFractionDigits={2}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { hoursEvening: n })}
         />
       </td>
@@ -488,7 +607,7 @@ function DailyRowInputs({
           value={row.hoursExtra}
           syncKey={syncKey}
           maxFractionDigits={2}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { hoursExtra: n })}
         />
       </td>
@@ -497,7 +616,7 @@ function DailyRowInputs({
           value={row.revenueMorning}
           syncKey={syncKey}
           maxFractionDigits={2}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { revenueMorning: n })}
         />
       </td>
@@ -506,7 +625,7 @@ function DailyRowInputs({
           value={row.revenueAfternoon}
           syncKey={syncKey}
           maxFractionDigits={2}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { revenueAfternoon: n })}
         />
       </td>
@@ -515,7 +634,7 @@ function DailyRowInputs({
           value={row.revenueEvening}
           syncKey={syncKey}
           maxFractionDigits={2}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { revenueEvening: n })}
         />
       </td>
@@ -524,7 +643,7 @@ function DailyRowInputs({
           value={row.customers}
           syncKey={syncKey}
           maxFractionDigits={0}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { customers: n })}
         />
       </td>
@@ -533,7 +652,7 @@ function DailyRowInputs({
           value={row.tryOns}
           syncKey={syncKey}
           maxFractionDigits={0}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { tryOns: n })}
         />
       </td>
@@ -542,7 +661,7 @@ function DailyRowInputs({
           value={row.orders}
           syncKey={syncKey}
           maxFractionDigits={0}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { orders: n })}
         />
       </td>
@@ -551,13 +670,27 @@ function DailyRowInputs({
           value={row.products}
           syncKey={syncKey}
           maxFractionDigits={0}
-          readOnly={readOnly}
+          readOnly={cellReadOnly}
           onCommit={(n) => onSave(row, { products: n })}
         />
       </td>
-      <td className="krik-money">{formatMoneyEn(row.targetNv, 2)}</td>
       <td className="krik-money">
-        <span className="krik-pill-kpi">{formatMoneyEn(row.percentNv, 1)}%</span>
+        {SALES_POSITION_CODES.has(row.positionCode) ? (
+          formatMoneyEn(row.targetNv, 2)
+        ) : (
+          <span className="muted" title="Mục tiêu doanh thu cá nhân chỉ tính cho nhân viên bán hàng (NVBH_FT / NVBH_PT).">
+            —
+          </span>
+        )}
+      </td>
+      <td className="krik-money">
+        {SALES_POSITION_CODES.has(row.positionCode) ? (
+          <span className="krik-pill-kpi">{formatMoneyEn(row.percentNv, 1)}%</span>
+        ) : (
+          <span className="muted" title="% KPI cá nhân chỉ áp dụng cho nhân viên bán hàng (NVBH_FT / NVBH_PT).">
+            —
+          </span>
+        )}
       </td>
     </tr>
   )

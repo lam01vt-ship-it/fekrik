@@ -1,12 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as krikApi from '../../api/krikApi'
+import { useAuth } from '../../auth/AuthContext'
 import { MoneyCellInput } from '../../components/MoneyCellInput'
 import { useShiftKpiStoreId } from '../../hooks/useShiftKpiStoreId'
 import type { StoreRow } from '../../types/api'
 import type { StoreMonthlyKpiConfig } from '../../types/shiftKpi'
 import { formatMoneyEn, parseMoneyEn } from '../../utils/moneyFormat'
 
+function localYearMonth(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
+
 export function KpiConfigPage() {
+  const { user } = useAuth()
   const { stores, storeId, setStoreId } = useShiftKpiStoreId()
   const [yearMonth, setYearMonth] = useState('2026-05')
   const [cfg, setCfg] = useState<StoreMonthlyKpiConfig | null>(null)
@@ -16,6 +24,18 @@ export function KpiConfigPage() {
   const [shift, setShift] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+
+  const roles = user?.roles ?? []
+  const isHR = roles.includes('AdminHR')
+  const isAreaManager = roles.includes('AreaManager')
+  const isStoreManager = roles.includes('StoreManager')
+  const isStoreManagerEditWindow = useMemo(() => {
+    const today = new Date()
+    return today.getDate() === 1 && yearMonth === localYearMonth(today)
+  }, [yearMonth])
+  const canEditConfig = isAreaManager || (isStoreManager && isStoreManagerEditWindow)
+  const canProposeConfig = isAreaManager || isStoreManager
+  const formLocked = useMemo(() => Boolean(cfg?.isMonthLocked) || !canEditConfig, [cfg, canEditConfig])
 
   const load = useCallback(async () => {
     if (!storeId) return
@@ -39,6 +59,18 @@ export function KpiConfigPage() {
   async function onSave(e: React.FormEvent) {
     e.preventDefault()
     if (!storeId) return
+    if (!canEditConfig) {
+      if (isStoreManager && !isStoreManagerEditWindow) {
+        setErr('QLCH chỉ sửa cấu hình KPI tháng vào ngày mùng 1 của chính tháng đó.')
+        return
+      }
+      setErr('Bạn không có quyền sửa cấu hình KPI tháng. Liên hệ Quản lý khu vực / QLCH để đề xuất.')
+      return
+    }
+    if (cfg?.isMonthLocked) {
+      setErr('Tháng đã chốt — đề nghị HR mở khoá trước khi sửa.')
+      return
+    }
     setMsg(null)
     setErr(null)
     const amt = parseMoneyEn(target)
@@ -54,17 +86,45 @@ export function KpiConfigPage() {
         shiftRatiosJson: shift,
       })
       setCfg(c)
-      setMsg('Đã lưu.')
+      setMsg('Đã lưu đề xuất. Chờ HR chốt (accept & khoá tháng).')
     } catch {
       setErr('Không lưu được. Kiểm tra quyền hoặc tháng đã khoá.')
     }
   }
 
+  async function onToggleLock() {
+    if (!storeId || !cfg) return
+    if (!isHR) {
+      setErr('Chỉ Admin HR mới chốt & khoá / mở khoá tháng KPI.')
+      return
+    }
+    setErr(null)
+    setMsg(null)
+    try {
+      const nextLocked = !cfg.isMonthLocked
+      const c = await krikApi.patchKpiMonthLock(storeId, yearMonth, nextLocked)
+      setCfg(c)
+      setMsg(nextLocked ? 'Đã chốt & khoá tháng.' : 'Đã mở khoá tháng để chỉnh sửa lại.')
+    } catch {
+      setErr('Không đổi được trạng thái khoá tháng.')
+    }
+  }
+
+  const roleHint = isHR
+    ? 'Vai trò HR: chỉ đọc cấu hình do Quản lý khu vực / QLCH đề xuất, accept bằng cách bấm "Chốt & khoá tháng" đầu kỳ; mở khoá khi cần điều chỉnh.'
+    : isAreaManager
+      ? 'Vai trò Quản lý khu vực: cập nhật KPI tháng cho cửa hàng trong khu vực. Khi HR đã chốt & khoá tháng, đề nghị HR mở khoá trước khi sửa.'
+      : isStoreManager
+        ? isStoreManagerEditWindow
+          ? 'Vai trò QLCH: hôm nay là mùng 1 của tháng đang chọn nên bạn được đề xuất / chỉnh KPI tháng. Sau khi HR chốt, form sẽ bị khoá.'
+          : 'Vai trò QLCH: chỉ được đề xuất / chỉnh KPI tháng vào ngày mùng 1 của chính tháng đó (theo giờ máy đang chạy hệ thống).'
+      : 'Bạn chỉ có quyền xem cấu hình KPI tháng.'
+
   return (
     <>
       <p className="krik-page-lead">
-        Thiết lập KPI tháng và chuỗi JSON tỷ trọng (tuần, ngày trong tuần, ca). Chỉ tài khoản quản trị & nhân sự
-        được lưu.
+        Cấu hình KPI tháng theo cửa hàng. <strong>Quản lý khu vực</strong> nhập đề xuất KPI tháng; <strong>QLCH</strong> chỉ được sửa vào ngày mùng 1 của tháng đang cấu hình;
+        <strong> Admin HR</strong> đọc, <strong>accept</strong> đầu kỳ bằng nút <em>Chốt & khoá tháng</em>, và mở khoá lại khi cần điều chỉnh.
       </p>
       <div className="krik-card" style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
@@ -87,22 +147,34 @@ export function KpiConfigPage() {
             Tháng
             <input className="krik-input" value={yearMonth} onChange={(e) => setYearMonth(e.target.value)} />
           </label>
-          <button type="button" className="krik-btn krik-btn--ghost" onClick={() => void load()}>
-            Tải lại
-          </button>
         </div>
+        <p className="muted" style={{ fontSize: 12, marginTop: 8, marginBottom: 0 }}>
+          {roleHint}
+        </p>
       </div>
       {err ? <p className="krik-alert">{err}</p> : null}
       {msg ? <p style={{ color: 'var(--success, #2e7d32)' }}>{msg}</p> : null}
       {cfg ? (
         <form className="krik-card" onSubmit={onSave}>
           <p className="muted" style={{ marginTop: 0 }}>
-            Cập nhật lần cuối: {new Date(cfg.updatedAt).toLocaleString('vi-VN')} — Khoá tháng:{' '}
-            <strong>{cfg.isMonthLocked ? 'có' : 'không'}</strong>
+            Cập nhật lần cuối: {new Date(cfg.updatedAt).toLocaleString('vi-VN')} — Trạng thái:{' '}
+            <strong>{cfg.isMonthLocked ? 'Đã chốt & khoá (HR)' : 'Đang mở để đề xuất'}</strong>
           </p>
+          {isHR ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              <button
+                type="button"
+                className="krik-btn krik-btn--primary"
+                disabled={!storeId}
+                onClick={() => void onToggleLock()}
+              >
+                {cfg.isMonthLocked ? 'Mở khoá tháng để chỉnh sửa (HR)' : 'Chốt & khoá tháng (HR)'}
+              </button>
+            </div>
+          ) : null}
           <label className="krik-field">
             KPI tháng (VND)
-            {cfg.isMonthLocked ? (
+            {formLocked ? (
               <input className="krik-input krik-money-input" readOnly disabled value={target} />
             ) : (
               <MoneyCellInput
@@ -116,19 +188,64 @@ export function KpiConfigPage() {
           </label>
           <label className="krik-field">
             Tỷ trọng theo tuần (JSON, 5 giá trị)
-            <textarea className="krik-input" style={{ minHeight: 72 }} value={week} onChange={(e) => setWeek(e.target.value)} />
+            <textarea
+              className="krik-input"
+              style={{ minHeight: 72 }}
+              value={week}
+              onChange={(e) => setWeek(e.target.value)}
+              readOnly={formLocked}
+              disabled={formLocked}
+            />
           </label>
+          {canEditConfig && !cfg.isMonthLocked ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+              <button type="button" className="krik-btn krik-btn--ghost" onClick={() => setWeek('[20,20,20,20,20]')}>
+                Preset: tuần chia đều 20%
+              </button>
+              <button type="button" className="krik-btn krik-btn--ghost" onClick={() => setDay('[14.29,14.29,14.29,14.29,14.29,14.29,14.29]')}>
+                Preset: 7 ngày gần đều (T2–CN)
+              </button>
+              <button
+                type="button"
+                className="krik-btn krik-btn--ghost"
+                onClick={() => setDay('[16,16,16,16,12,12,12]')}
+                title="T2–T5 cao hơn T6–CN (57.14% / 42.86% chia cho 4+3 ngày)"
+              >
+                Preset: early week / weekend
+              </button>
+            </div>
+          ) : null}
           <label className="krik-field">
             Tỷ trọng theo ngày trong tuần (JSON)
-            <textarea className="krik-input" style={{ minHeight: 72 }} value={day} onChange={(e) => setDay(e.target.value)} />
+            <textarea
+              className="krik-input"
+              style={{ minHeight: 72 }}
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+              readOnly={formLocked}
+              disabled={formLocked}
+            />
           </label>
           <label className="krik-field">
             Tỷ trọng theo ca (JSON)
-            <textarea className="krik-input" style={{ minHeight: 100 }} value={shift} onChange={(e) => setShift(e.target.value)} />
+            <textarea
+              className="krik-input"
+              style={{ minHeight: 100 }}
+              value={shift}
+              onChange={(e) => setShift(e.target.value)}
+              readOnly={formLocked}
+              disabled={formLocked}
+            />
           </label>
-          <button type="submit" className="krik-btn krik-btn--primary" disabled={cfg.isMonthLocked}>
-            Lưu cấu hình
-          </button>
+          {canProposeConfig ? (
+            <button type="submit" className="krik-btn krik-btn--primary" disabled={cfg.isMonthLocked || !canEditConfig}>
+              {cfg.isMonthLocked
+                ? 'Tháng đã chốt — không sửa được'
+                : canEditConfig
+                  ? 'Lưu đề xuất KPI'
+                  : 'QLCH chỉ sửa ngày mùng 1 của tháng này'}
+            </button>
+          ) : null}
         </form>
       ) : null}
     </>

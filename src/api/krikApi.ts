@@ -145,6 +145,40 @@ export async function putKpiMonth(
   return data
 }
 
+export async function patchKpiMonthLock(
+  storeId: string,
+  yearMonth: string,
+  locked: boolean,
+): Promise<StoreMonthlyKpiConfig> {
+  const { data } = await api.patch<StoreMonthlyKpiConfig>(
+    `/api/stores/${storeId}/shift-kpi/kpi-months/${encodeURIComponent(yearMonth)}/month-lock`,
+    { locked },
+  )
+  return data
+}
+
+export async function patchDailyDayLock(storeId: string, workDate: string, locked: boolean): Promise<void> {
+  await api.patch(`/api/stores/${storeId}/shift-kpi/daily-day-lock`, { locked }, { params: { workDate } })
+}
+
+export async function postDailyEqualize(storeId: string, workDate: string): Promise<void> {
+  await api.post(`/api/stores/${storeId}/shift-kpi/daily-equalize`, {}, { params: { workDate } })
+}
+
+export async function patchStaffPosition(
+  storeId: string,
+  staffId: string,
+  positionCode: string,
+  workDate: string,
+): Promise<StoreStaff> {
+  const { data } = await api.patch<StoreStaff>(
+    `/api/stores/${storeId}/shift-kpi/staff/${staffId}/position`,
+    { positionCode },
+    { params: { workDate } },
+  )
+  return data
+}
+
 export async function fetchMonthlyDashboard(storeId: string, yearMonth: string): Promise<MonthlyDashboard> {
   const { data } = await api.get<MonthlyDashboard>(`/api/stores/${storeId}/shift-kpi/monthly-dashboard`, {
     params: { yearMonth },

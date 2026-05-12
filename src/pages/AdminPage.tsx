@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as krikApi from '../api/krikApi'
-import type { UserListItem } from '../types/api'
+import type { StoreRow, UserListItem } from '../types/api'
 
 const roleVi: Record<string, string> = {
   AdminHR: 'Quản trị & nhân sự',
@@ -16,17 +16,22 @@ function rolesVi(roles: string[]) {
 export function AdminPage() {
   const [ping, setPing] = useState<string | null>(null)
   const [users, setUsers] = useState<UserListItem[] | null>(null)
+  const [stores, setStores] = useState<StoreRow[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const p = await krikApi.adminPing()
-        const u = await krikApi.fetchUsers()
+        const [p, u, s] = await Promise.all([
+          krikApi.adminPing(),
+          krikApi.fetchUsers(),
+          krikApi.fetchStores(),
+        ])
         if (!cancelled) {
           setPing(p.message)
           setUsers(u)
+          setStores(s)
         }
       } catch {
         if (!cancelled) setError('Không có quyền hoặc máy chủ lỗi.')
@@ -36,6 +41,12 @@ export function AdminPage() {
       cancelled = true
     }
   }, [])
+
+  const storeLabelById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const s of stores) m.set(s.id, `${s.code} — ${s.name}`)
+    return m
+  }, [stores])
 
   return (
     <>
@@ -57,7 +68,7 @@ export function AdminPage() {
               <tr>
                 <th>Email</th>
                 <th>Họ tên</th>
-                <th>Mã cửa hàng</th>
+                <th>Cửa hàng</th>
                 <th>Vai trò</th>
               </tr>
             </thead>
@@ -73,7 +84,7 @@ export function AdminPage() {
                   <tr key={u.id}>
                     <td>{u.email}</td>
                     <td>{u.fullName}</td>
-                    <td>{u.storeId ?? '—'}</td>
+                    <td>{u.storeId ? (storeLabelById.get(u.storeId) ?? u.storeId) : '—'}</td>
                     <td>{rolesVi(u.roles)}</td>
                   </tr>
                 ))

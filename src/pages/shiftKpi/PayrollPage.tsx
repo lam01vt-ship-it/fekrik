@@ -107,33 +107,43 @@ export function PayrollPage() {
             <thead>
               <tr>
                 <th>Họ tên</th>
-                <th>Mã</th>
+                <th>Mã NV</th>
                 <th>Chức danh</th>
+                <th>HĐ</th>
+                <th className="krik-money">Lương/giờ</th>
+                <th className="krik-money">GC Sáng</th>
+                <th className="krik-money">GC Chiều</th>
+                <th className="krik-money">GC Tối</th>
+                <th className="krik-money">GC BS</th>
                 <th className="krik-money">Tổng GC</th>
+                <th className="krik-money">DT Sáng</th>
+                <th className="krik-money">DT Chiều</th>
+                <th className="krik-money">DT Tối</th>
                 <th className="krik-money">Tổng DT</th>
-                <th className="krik-money">Tỷ lệ hoa hồng</th>
-                <th className="krik-money">Hoa hồng</th>
+                <th className="krik-money">% HH</th>
+                <th className="krik-money">Lương DT</th>
                 <th className="krik-money">Lương cứng</th>
                 <th className="krik-money">Thưởng team</th>
-                <th className="krik-money">Tổng</th>
+                <th className="krik-money">Tổng lương</th>
+                <th className="krik-money">HH ước (95% KPI)</th>
               </tr>
             </thead>
             <tbody>
               {!storeId ? (
                 <tr>
-                  <td colSpan={10} style={{ color: 'var(--muted)' }}>
+                  <td colSpan={20} style={{ color: 'var(--muted)' }}>
                     Chọn cửa hàng để xem bảng lương.
                   </td>
                 </tr>
               ) : !loadedOnce && !err ? (
                 <tr>
-                  <td colSpan={10} style={{ color: 'var(--muted)' }}>
+                  <td colSpan={20} style={{ color: 'var(--muted)' }}>
                     Đang tải…
                   </td>
                 </tr>
               ) : showEmptyPayroll ? (
                 <tr>
-                  <td colSpan={10} style={{ color: 'var(--muted)' }}>
+                  <td colSpan={20} style={{ color: 'var(--muted)' }}>
                     Không có bảng lương cho cửa hàng và tháng đã chọn (chưa có dữ liệu công / KPI để tính).
                   </td>
                 </tr>
@@ -143,7 +153,16 @@ export function PayrollPage() {
                     <td>{r.fullName}</td>
                     <td>{r.staffCode}</td>
                     <td>{r.positionCode}</td>
+                    <td>{r.contractType}</td>
+                    <td className="krik-money">{formatMoneyEn(r.hourlyRate, 0)}</td>
+                    <td className="krik-money">{formatMoneyEn(r.hoursMorning, 2)}</td>
+                    <td className="krik-money">{formatMoneyEn(r.hoursAfternoon, 2)}</td>
+                    <td className="krik-money">{formatMoneyEn(r.hoursEvening, 2)}</td>
+                    <td className="krik-money">{formatMoneyEn(r.hoursExtra, 2)}</td>
                     <td className="krik-money">{formatMoneyEn(r.totalHours, 2)}</td>
+                    <td className="krik-money">{formatMoneyEn(r.revenueMorning, 0)}</td>
+                    <td className="krik-money">{formatMoneyEn(r.revenueAfternoon, 0)}</td>
+                    <td className="krik-money">{formatMoneyEn(r.revenueEvening, 0)}</td>
                     <td className="krik-money">{formatMoneyEn(r.totalRevenue, 0)}</td>
                     <td className="krik-money">{formatMoneyEn(r.commissionPctApplied, 2)}%</td>
                     <td className="krik-money">{formatMoneyEn(r.salaryRevenue, 0)}</td>
@@ -151,6 +170,11 @@ export function PayrollPage() {
                     <td className="krik-money">{formatMoneyEn(r.teamBonus, 0)}</td>
                     <td className="krik-money">
                       <strong>{formatMoneyEn(r.totalSalary, 0)}</strong>
+                    </td>
+                    <td className="krik-money">
+                      {r.hypotheticalSalaryRevenueAt95 != null
+                        ? formatMoneyEn(r.hypotheticalSalaryRevenueAt95, 0)
+                        : '—'}
                     </td>
                   </tr>
                 ))

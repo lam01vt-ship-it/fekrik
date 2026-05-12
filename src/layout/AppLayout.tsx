@@ -5,11 +5,10 @@ import type { AppOutletContextValue } from './appOutletContext'
 
 function pageMeta(pathname: string): { module: string; title: string } {
   const p = pathname.replace(/\/$/, '') || '/app'
-  if (p === '/app') return { module: 'Trang chủ', title: 'Tổng quan' }
+  if (p === '/app') return { module: 'Trang chủ', title: 'Tổng quan tháng' }
   if (p.endsWith('/stores')) return { module: 'Vận hành', title: 'Cửa hàng' }
   if (p.endsWith('/admin')) return { module: 'Quản trị', title: 'Người dùng' }
   if (p.includes('/staff-shift-kpi/daily')) return { module: 'Vận hành', title: 'Bảng công theo ngày' }
-  if (p.includes('/staff-shift-kpi/monthly')) return { module: 'Vận hành', title: 'Tổng quan tháng' }
   if (p.includes('/staff-shift-kpi/kpi-config')) return { module: 'Vận hành', title: 'Cấu hình KPI tháng' }
   if (p.includes('/staff-shift-kpi/staff')) return { module: 'Vận hành', title: 'Danh sách nhân viên' }
   if (p.includes('/staff-shift-kpi/payroll')) return { module: 'Vận hành', title: 'Bảng lương' }
@@ -35,12 +34,6 @@ const roleVi: Record<string, string> = {
 function rolesVi(roles: string[]) {
   return roles.map((r) => roleVi[r] ?? r).join(' · ')
 }
-
-const IcHome = () => (
-  <svg className="krik-nav-icon" viewBox="0 0 24 24" aria-hidden>
-    <path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H9v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-  </svg>
-)
 
 const IcStore = () => (
   <svg className="krik-nav-icon" viewBox="0 0 24 24" aria-hidden>
@@ -143,56 +136,37 @@ export function AppLayout() {
           </button>
         </div>
         <nav className="krik-menu">
-          {!collapsed ? <div className="krik-nav-section-label">Danh mục</div> : null}
           <NavLink
             to="/app"
             end
-            title="Tổng quan"
+            title="Tổng quan tháng"
             className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
           >
-            <span className="krik-nav-dot" />
-            <IcHome />
-            <span className="krik-nav-label">Tổng quan</span>
+            <IcChart />
+            <span className="krik-nav-label">Tổng quan tháng</span>
           </NavLink>
           <NavLink
             to="/app/stores"
             title="Cửa hàng"
             className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
           >
-            <span className="krik-nav-dot" />
             <IcStore />
             <span className="krik-nav-label">Cửa hàng</span>
           </NavLink>
-          {!collapsed ? (
-            <div className="krik-nav-section-label" style={{ marginTop: 8 }}>
-              Công và KPI nhân viên
-            </div>
-          ) : null}
           <NavLink
             to="/app/staff-shift-kpi/daily"
             title="Bảng công ngày"
             className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
           >
-            <span className="krik-nav-dot" />
             <IcCalendar />
             <span className="krik-nav-label">Bảng công (ngày)</span>
           </NavLink>
-          <NavLink
-            to="/app/staff-shift-kpi/monthly"
-            title="Tổng quan tháng"
-            className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
-          >
-            <span className="krik-nav-dot" />
-            <IcChart />
-            <span className="krik-nav-label">Tổng quan tháng</span>
-          </NavLink>
-          {isAdmin ? (
+          {canStaffMaster ? (
             <NavLink
               to="/app/staff-shift-kpi/kpi-config"
               title="Cấu hình KPI"
               className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
             >
-              <span className="krik-nav-dot" />
               <IcSliders />
               <span className="krik-nav-label">Cấu hình KPI</span>
             </NavLink>
@@ -203,7 +177,6 @@ export function AppLayout() {
               title="Danh sách NV"
               className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
             >
-              <span className="krik-nav-dot" />
               <IcUsers />
               <span className="krik-nav-label">Danh sách nhân viên</span>
             </NavLink>
@@ -213,7 +186,6 @@ export function AppLayout() {
             title="Bảng lương"
             className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
           >
-            <span className="krik-nav-dot" />
             <IcMoney />
             <span className="krik-nav-label">Bảng lương</span>
           </NavLink>
@@ -223,7 +195,6 @@ export function AppLayout() {
               title="Quản trị người dùng"
               className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
             >
-              <span className="krik-nav-dot" />
               <IcShield />
               <span className="krik-nav-label">Quản trị người dùng</span>
             </NavLink>

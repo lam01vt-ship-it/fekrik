@@ -20,6 +20,7 @@ export type StoreDailySummary = {
   storeProducts: number
   storeDayKpiTarget: number
   tongDoanhThuHeThong: number
+  isDayLocked: boolean
 }
 
 export type DailyEntryRow = {
@@ -45,11 +46,14 @@ export type DailyEntryRow = {
   targetNv: number
   revenueTotal: number
   percentNv: number
+  canPatch: boolean
 }
 
 export type DailySheet = {
   storeId: string
   workDate: string
+  monthLocked: boolean
+  dayLocked: boolean
   summary: StoreDailySummary
   rows: DailyEntryRow[]
 }
@@ -65,6 +69,23 @@ export type StoreMonthlyKpiConfig = {
   updatedAt: string
 }
 
+export type MonthlyDailySeriesItem = {
+  workDate: string
+  staffRevenue: number
+  channelRevenue: number
+  storeDayKpiTarget: number
+  isDayLocked: boolean
+}
+
+export type MonthlyTopStaff = {
+  staffId: string
+  staffCode: string
+  fullName: string
+  positionCode: string
+  totalRevenue: number
+  totalHours: number
+}
+
 export type MonthlyDashboard = {
   yearMonth: string
   monthlyTarget: number
@@ -73,6 +94,8 @@ export type MonthlyDashboard = {
   kpiAchievedPct: number
   discrepancyOver5Pct: boolean
   isMonthLocked: boolean
+  dailySeries: MonthlyDailySeriesItem[]
+  topStaff: MonthlyTopStaff[]
 }
 
 export type PayrollRow = {
