@@ -7,6 +7,11 @@ function pageMeta(pathname: string): { module: string; title: string } {
   if (p === '/app') return { module: 'Trang chủ', title: 'Tổng quan' }
   if (p.endsWith('/stores')) return { module: 'Vận hành', title: 'Cửa hàng' }
   if (p.endsWith('/admin')) return { module: 'Quản trị', title: 'Người dùng' }
+  if (p.includes('/staff-shift-kpi/daily')) return { module: 'Vận hành', title: 'Bảng công theo ngày' }
+  if (p.includes('/staff-shift-kpi/monthly')) return { module: 'Vận hành', title: 'Tổng quan tháng' }
+  if (p.includes('/staff-shift-kpi/kpi-config')) return { module: 'Vận hành', title: 'Cấu hình KPI tháng' }
+  if (p.includes('/staff-shift-kpi/staff')) return { module: 'Vận hành', title: 'Danh sách NV' }
+  if (p.includes('/staff-shift-kpi/payroll')) return { module: 'Vận hành', title: 'Bảng lương' }
   return { module: 'Krik', title: 'Trang' }
 }
 
@@ -39,6 +44,37 @@ const IcShield = () => (
   </svg>
 )
 
+const IcCalendar = () => (
+  <svg className="krik-nav-icon" viewBox="0 0 24 24" aria-hidden>
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M16 3v4M8 3v4M3 11h18" style={{ opacity: 0.55 }} />
+  </svg>
+)
+
+const IcChart = () => (
+  <svg className="krik-nav-icon" viewBox="0 0 24 24" aria-hidden>
+    <path d="M4 20h16M6 16l4-8 4 5 4-9" />
+  </svg>
+)
+
+const IcSliders = () => (
+  <svg className="krik-nav-icon" viewBox="0 0 24 24" aria-hidden>
+    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-4M20 14V3M9 10h6M5 18h2M15 7h2" />
+  </svg>
+)
+
+const IcUsers = () => (
+  <svg className="krik-nav-icon" viewBox="0 0 24 24" aria-hidden>
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+)
+
+const IcMoney = () => (
+  <svg className="krik-nav-icon" viewBox="0 0 24 24" aria-hidden>
+    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </svg>
+)
+
 export function AppLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -54,6 +90,8 @@ export function AppLayout() {
   const menuRef = useRef<HTMLDivElement>(null)
 
   const isAdmin = user?.roles.includes('AdminHR') ?? false
+  const canStaffMaster =
+    isAdmin || user?.roles.includes('AreaManager') || user?.roles.includes('StoreManager')
   const meta = useMemo(() => pageMeta(location.pathname), [location.pathname])
 
   useEffect(() => {
@@ -111,6 +149,60 @@ export function AppLayout() {
             <span className="krik-nav-dot" />
             <IcStore />
             <span className="krik-nav-label">Cửa hàng</span>
+          </NavLink>
+          {!collapsed ? (
+            <div className="krik-nav-section-label" style={{ marginTop: 8 }}>
+              Công &amp; KPI NV
+            </div>
+          ) : null}
+          <NavLink
+            to="/app/staff-shift-kpi/daily"
+            title="Bảng công ngày"
+            className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
+          >
+            <span className="krik-nav-dot" />
+            <IcCalendar />
+            <span className="krik-nav-label">Bảng công (ngày)</span>
+          </NavLink>
+          <NavLink
+            to="/app/staff-shift-kpi/monthly"
+            title="Tổng quan tháng"
+            className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
+          >
+            <span className="krik-nav-dot" />
+            <IcChart />
+            <span className="krik-nav-label">Tổng quan tháng</span>
+          </NavLink>
+          {isAdmin ? (
+            <NavLink
+              to="/app/staff-shift-kpi/kpi-config"
+              title="Cấu hình KPI"
+              className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
+            >
+              <span className="krik-nav-dot" />
+              <IcSliders />
+              <span className="krik-nav-label">Cấu hình KPI</span>
+            </NavLink>
+          ) : null}
+          {canStaffMaster ? (
+            <NavLink
+              to="/app/staff-shift-kpi/staff"
+              title="Danh sách NV"
+              className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
+            >
+              <span className="krik-nav-dot" />
+              <IcUsers />
+              <span className="krik-nav-label">Danh sách NV</span>
+            </NavLink>
+          ) : null}
+          <NavLink
+            to="/app/staff-shift-kpi/payroll"
+            title="Bảng lương"
+            className={({ isActive }) => `krik-nav-item${isActive ? ' active' : ''}`}
+          >
+            <span className="krik-nav-dot" />
+            <IcMoney />
+            <span className="krik-nav-label">Bảng lương</span>
           </NavLink>
           {isAdmin ? (
             <NavLink
